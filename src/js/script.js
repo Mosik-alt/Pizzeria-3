@@ -198,14 +198,14 @@
       if (thisProduct.data.params) {
         for (let param in thisProduct.data.params) {
           // stała ma wartość wszystkich wybranych dodatków wykorzystujemy tablicę po wszystkich dodatkach "params"//
-          const paramValue = thisProduct.data.params[paramId];
+          const paramValue = thisProduct.data.params[param];
           /* START LOOP: for each optionId in param.options */
           //gdzie jest optionID? //
           for (let option in paramValue.options) {
             /* save the element in param.options with key optionId as const option */
-            const optionValue = paramValue.options[optionId];
+            const optionValue = paramValue.options[option];
             /* START IF: if option is selected and option is not default */
-            let formDataParam = formData[paramId] || [];
+            let formDataParam = formData[param] || [];
             if (formDataParam) {
               if (formDataParam.includes(option) && !optionValue.default) {
                 /* add price of option to variable price */
@@ -217,8 +217,8 @@
               }
               /* kod odpowiedzialny za obrazki, zaś formData powinna nam zwrócić zaznaczone opcje*/
               if (formDataParam && formDataParam.includes(option)) {
-                if (!thisProduct.params[paramId]) {
-                  thisProduct.params[paramId] = {
+                if (!thisProduct.params[param]) {
+                  thisProduct.params[param] = {
                     label: paramValue.label,
                     options: {},
                   };
@@ -226,7 +226,7 @@
                 }
 
                 /*Wszystkie obrazki dla tej opcji, to wszystkie elementy wyszukane w thisProduct.imageWrapper, które pasują do selektora, składającego się z:*/
-                thisProduct.params[paramId].options[optionId] = optionValue.label;
+                thisProduct.params[param].options[option] = optionValue.label;
                 let allImages = thisProduct.imageWrapper.querySelectorAll('.' + param + '-' + option);
                 for (let image of allImages) {
                   image.classList.add('active');
@@ -262,13 +262,13 @@
     addTooCart() {
       const thisProduct = this;
       thisProduct.name = thisProduct.data.name;
-      thisProductamount = thisProduct.amountWidget.value;
-      app.cart.app(thisProduct);
+      thisProduct.amount = thisProduct.amountWidget.value;
+      app.cart.add(thisProduct);
 
     }
   }
 
-  class amountWidget {
+  class AmountWidget {
     constructor(element) {
       const thisWidget = this;
       thisWidget.getElements(element);
@@ -365,9 +365,49 @@
       cartContainer.appendChild(menuProduct);
       console.log('adding product', menuProduct);
 
-      thisCart.product.push(menuProduct);
+      thisCart.product.push(new CartProduct(menuProduct, generatedDOM));
       console.log('thisCart', thisCart.products);
     }
+
+  }
+  /* gdzie znajdę menuProduct w html? css??*/
+  class CartProduct {
+    constructor(menuProduct, element) {
+      thisCartProduct = this;
+      thisCartProduct.id = menuProduct.id;
+      thisCartProduct.menu = menuProduct.menu;
+      thisCartProduct.price = menuProduct.price;
+      thisCartProduct.priceSingle = menuProduct.priceSingle;
+      thisCartProduct.amount = menuProduct.amount;
+      thisCartProduct.params = JSON.parse(JSON.stringify(menuProduct.params));
+    }
+
+    getElements(element) {
+
+      console.log('thisCartProduct', thisCartProduct);
+      const thisCartProduct = this;
+
+      thisCartProduct.dom = {};
+
+      thisCartProduct.dom.wrapper = element;
+      /*przypisać znalezione we wrapperze właściwości - można je znaleść w select.cartProduct JS*/
+      thisCartProduct.dom.amountWidget = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.amountWidget);
+      thisCartProduct.dom.price = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.price);
+      thisCartProduct.dom.edit = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.edit);
+      thisCartProduct.dom.remove = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.remove);
+    }
+
+    initAmountWidget() {
+      const thisCartProduct = this;
+      thisCartProduct.amountWidget = new AmountWidget(thisCartProduct.dom.amountWidgetElem);
+      thisCartProduct.amountWidgetElem.addEventListener('updated', function () {
+        thisCartProduct.amount = thisCartProduct.amountWidget.value;
+        thisCartProduct.price = thisCartProduct.priceSingle * thisCartProduct.amount;
+        thisCartProduct.dom.price.innerHTML = thisCartProduct.price;
+      });
+    }
+
+    initAmountWidget ();
 
   }
 
