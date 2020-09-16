@@ -330,15 +330,23 @@
     constructor(element) {
       const thisCart = this;
       thisCart.product = [];
+      thisCart.deliveryFee = settings.cart.defaultDeliveryFee;
       console.log('new Cart', thisCart);
     }
     getElements(element) {
       const thisCart = this;
-      thisCard.dom = {};
+      thisCart.dom = {};
       thisCart.dom.wrapper = element;
       thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);
       thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
+
+      thisCart.renderTotalsKeys = ['totalNumber', 'totalPrice', 'subtotalPrice', 'deliveryFee'];
+
+      for (let key of thisCart.renderTotalsKeys) {
+        thisCart.dom[key] = thisCart.dom.wrapper.querySelectorAll(select.cart[key]);
+      }
     }
+
 
 
     initActions() {
@@ -348,6 +356,9 @@
       });
       thisCart.dom.toggleTrigger.addEventListener('click', function () {
         thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive);
+      });
+      thisCart.dom.productList.addEventListener('updated', function () {
+        thisCart.update();
       });
     }
 
@@ -369,8 +380,45 @@
       console.log('thisCart', thisCart.products);
     }
 
+
+    update() {
+      const thisCart = this;
+      thisCart.totalNumber = 0;
+      thisCart.subtotalPrice = 0;
+      for (let product of thisCart.products) {
+        thisCart.subtotalPrice += product.price;
+        thisCart.totalNumber += product.amount;
+      }
+      thisCart.totalPrice = thisCart.subtotalPrice + thisCart.deliveryFee;
+
+      console.log(totalNumber);
+      console.log(subtotalPrice);
+      console.log(thisCart.totalPrice);
+
+      for (let key of thisCart.renderTotalsKeys) {
+        for (let elem of thisCart.dom[key]) {
+          elem.innerHTML = thisCart[key];
+        }
+      }
+
+    }
+remove(){
+  const thisCart = this;
+  /* stała index, której wartością jest index cartProduct w tablicy thisCart.products*/
+  const index = thisProduct.prducts.indexOf(cartProduct);
+  /* użyć metody splice ( przymuje ona 2 argumenty:indeks pierwszego usuwanego elementu oraz liczbę elementów,
+   licząc od pierwszego usuwanego elementu. )
+   do usunięcia elementu  o tym indeksie z tablicy thisCart.products ?ale ile elementów usuwamy może 1 bo jest jeden element w tablicy??*/
+  thisCart.products.splice(index, 1 );
+  /* usunąć z DOM element cartProduct.dom.wrapper- wpisać element DOM do usunięcia funkcję remove i pusty nawias*/
+  thisCart.cartProduct.dom.wrapper.remove();
+  thisCart.update();
+}
+
   }
-  /* gdzie znajdę menuProduct w html? css??*/
+
+
+  /* gdzie znajdę menuProduct - select.menuProduct w zmiennej globalnej*/
   class CartProduct {
     constructor(menuProduct, element) {
       thisCartProduct = this;
@@ -399,6 +447,7 @@
 
     initAmountWidget() {
       const thisCartProduct = this;
+
       thisCartProduct.amountWidget = new AmountWidget(thisCartProduct.dom.amountWidgetElem);
       thisCartProduct.amountWidgetElem.addEventListener('updated', function () {
         thisCartProduct.amount = thisCartProduct.amountWidget.value;
@@ -407,9 +456,35 @@
       });
     }
 
-    initAmountWidget ();
+    initAmountWidget() {
+      console.log('initAmountWidget', initAmuontWidget);
+    }
 
+    remove() {
+      const thisCartProduct = this;
+
+      const event = new CustomEvent('remove', {
+        bubbles: true,
+        detail: {
+          cartProduct: thisCartProduct,
+        }
+      });
+      thisCartProduct.dom.wrapper.dispatchEvent(event);
+    }
+
+    initActions() {
+      const thisCart = this;
+      /*? Dlaczego mi event sam się przekreśla?*/
+      thisCartProduct.dom.edit.addEventListener('click', function () {
+        event.preventDefault();
+      });
+      thisCartProduct.dom.remove.addEventListener('click', function () {
+        event.preventDefault();
+        thisCartProduct.remove();
+      });
+    }
   }
+
 
   const app = {
 
