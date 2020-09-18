@@ -551,4 +551,4 @@ const app = {
 };
 
 app.init();
-};
+}
