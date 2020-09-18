@@ -1,5 +1,7 @@
 /* global Handlebars, utils, dataSource */ // eslint-disable-line no-unused-vars
 
+const { get } = require("browser-sync");
+
 {
   'use strict';
 
@@ -77,6 +79,11 @@
       defaultDeliveryFee: 20,
     },
     // CODE ADDED END
+    db: {
+      url: '//localhost:3131',
+      product: 'product',
+      order: 'order',
+    },
   };
 
   const templates = {
@@ -196,332 +203,352 @@
       //START LOOP: for each paramId in thisProduct.data.params//
       //są również składniki odhaczone należy je znaleść po wszystkich params, ale gdzie jest checked? //
       if (thisProduct.data.params) {
-        for (let param in thisProduct.data.params) {
+        for (let paramId in thisProduct.data.params) {
           // stała ma wartość wszystkich wybranych dodatków wykorzystujemy tablicę po wszystkich dodatkach "params"//
-          const paramValue = thisProduct.data.params[param];
+          const paramValue = thisProduct.data.params[paramId];
           /* START LOOP: for each optionId in param.options */
           //gdzie jest optionID? //
-          for (let option in paramValue.options) {
+          for (let optionId in paramValue.options) {
             /* save the element in param.options with key optionId as const option */
-            const optionValue = paramValue.options[option];
-            /* START IF: if option is selected and option is not default */
-            let formDataParam = formData[param] || [];
-            if (formDataParam) {
-              if (formDataParam.includes(option) && !optionValue.default) {
-                /* add price of option to variable price */
-                price += optionValue.price;
-                /* END IF: if option is selected and option is not default */
-                if (!formData.includes(option)) {
-                  price -= optionValue.price;
-                }
-              }
-              /* kod odpowiedzialny za obrazki, zaś formData powinna nam zwrócić zaznaczone opcje*/
-              if (formDataParam && formDataParam.includes(option)) {
-                if (!thisProduct.params[param]) {
-                  thisProduct.params[param] = {
-                    label: paramValue.label,
-                    options: {},
-                  };
-                  console.log('thisProduct.params', thisProduct.params);
-                }
+            const optionValue = paramValue.options[optionID];
 
-                /*Wszystkie obrazki dla tej opcji, to wszystkie elementy wyszukane w thisProduct.imageWrapper, które pasują do selektora, składającego się z:*/
-                thisProduct.params[param].options[option] = optionValue.label;
-                let allImages = thisProduct.imageWrapper.querySelectorAll('.' + param + '-' + option);
-                for (let image of allImages) {
-                  image.classList.add('active');
-                }
-              }
-              else {
-                let allImages = thisProduct.imageWrapper.querySelectorAll('.' + param + '-' + option);
-                for (let image of allImages) {
-                  image.classList.remove('active');
-                }
-              }
+            const optionSelected = formData.hasOwnProperty(paramId) && formData[paramId].indexOf(optionId) > -1;
+
+            /* START IF: if option is selected and option is not default */
+            if (optionSelected && !optionValue.default) {
+              price += optionValue.price;
+            } else if (!optionSelected && optionValue.default) {
+              price -= optionValue.price;
+            }
+          }
+
+          thisProduct.priceElem.innerHTML = price;
+
+          /* kod odpowiedzialny za obrazki, zaś formData powinna nam zwrócić zaznaczone opcje*/
+          if (formDataParam && formDataParam.includes(option)) {
+            if (!thisProduct.params[param]) {
+              thisProduct.params[param] = {
+                label: paramValue.label,
+                options: {},
+              };
+              console.log('thisProduct.params', thisProduct.params);
+            }
+
+            /*Wszystkie obrazki dla tej opcji, to wszystkie elementy wyszukane w thisProduct.imageWrapper, które pasują do selektora, składającego się z:*/
+            thisProduct.params[param].options[option] = optionValue.label;
+            let allImages = thisProduct.imageWrapper.querySelectorAll('.' + param + '-' + option);
+            for (let image of allImages) {
+              image.classList.add('active');
+            }
+          }
+          else {
+            let allImages = thisProduct.imageWrapper.querySelectorAll('.' + param + '-' + option);
+            for (let image of allImages) {
+              image.classList.remove('active');
             }
           }
         }
       }
-      /* multiply price by amount */
-      thisProduct.priceSingle = price;
-      thisProduct.price = thisProduct.priceSingle * thisProduct.amountWidget.value;
+    
 
-      /* set the contents of thisProduct.priceElem to be the value of variable price */
-      thisProduct.priceElem.innerHTML = thisProduct.price;
-    }
+  /* multiply price by amount */
+  thisProduct.priceSingle = price;
+  thisProduct.price = thisProduct.priceSingle * thisProduct.amountWidget.value;
 
-
-    initAmountWidget() {
-      const thisProduct = this;
-      thisProduct.amountWidget = new AmountWidget(thisProduct.amountWidgetElem);
-      thisProduct.amountWidgetElem.addEventListener('updated', function () {
-        thisProduct.processOrder();
-      });
-    }
-
-    addTooCart() {
-      const thisProduct = this;
-      thisProduct.name = thisProduct.data.name;
-      thisProduct.amount = thisProduct.amountWidget.value;
-      app.cart.add(thisProduct);
-
-    }
+  /* set the contents of thisProduct.priceElem to be the value of variable price */
+  thisProduct.priceElem.innerHTML = thisProduct.price;
   }
 
-  class AmountWidget {
-    constructor(element) {
-      const thisWidget = this;
-      thisWidget.getElements(element);
 
-      console.log('AmountWidget:', thisWidget);
-      console.log('constructor arguments:', element);
-    }
-
-
-    getElements(element) {
-      const thisWidget = this;
-
-      thisWidget.element = element;
-      thisWidget.input = thisWidget.element.querySelector(select.widgets.amount.input);
-      thisWidget.linkDecrease = thisWidget.element.querySelector(select.widgets.amount.linkDecrease);
-      thisWidget.linkIncrease = thisWidget.element.querySelector(select.widgets.amount.linkIncrease);
-    }
-
-
-    setValue(value) {
-      const thisWidget = this;
-      const newValue = parseInt(value);
-
-      /* To do : Add validation*/
-      thisWidget.value = newValue;
-      thisWidget.input.value = thisWidget.value;
-      thisWidget.setValue(thisWidget.input.value);
-
-    }
-
-    announce() {
-      const thisWidget = this;
-
-      const event = new CustomEvent('updated', {
-        bubbles: true
-      });
-      thisWidget.dom.wrapper.dispatchEvent(event);
-    }
-
-    initActions() {
-      const thisWidget = this;
-      thisWidget.dom.linkIncrease.addEventListener('click', function (event) {
-        event.preventDefault();
-        thisWidget.setValue(thisWidget.value + 1);
-      });
-
-      thisWidget.dom.linkDecrease.addEventListener('click', function (event) {
-        event.preventDefault();
-        thisWidget.setValue(thisWidget.value - 1);
-      });
-
-      thisWidget.dom.input.addEventListener('change', function () {
-        thisWidget.value = thisWidget.dom.input.value;
-      });
-    }
-  }
-
-  class Cart {
-    constructor(element) {
-      const thisCart = this;
-      thisCart.product = [];
-      thisCart.deliveryFee = settings.cart.defaultDeliveryFee;
-      console.log('new Cart', thisCart);
-    }
-    getElements(element) {
-      const thisCart = this;
-      thisCart.dom = {};
-      thisCart.dom.wrapper = element;
-      thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);
-      thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
-
-      thisCart.renderTotalsKeys = ['totalNumber', 'totalPrice', 'subtotalPrice', 'deliveryFee'];
-
-      for (let key of thisCart.renderTotalsKeys) {
-        thisCart.dom[key] = thisCart.dom.wrapper.querySelectorAll(select.cart[key]);
-      }
-    }
-
-
-
-    initActions() {
-      const thisCart = this;
-      thisCart.dom.toggleTrigger.addEventListener('click', function (event) {
-        event.preventDefault();
-      });
-      thisCart.dom.toggleTrigger.addEventListener('click', function () {
-        thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive);
-      });
-      thisCart.dom.productList.addEventListener('updated', function () {
-        thisCart.update();
-      });
-    }
-
-    add(menuProduct) {
-      const thisCart = this;
-      /*generate HTML based on temple w scripcie o id="template-cart-product" przekazujemy cały obiekt menuProduct */
-      const generatedHTML = templates.cartProduct(menuProduct);
-
-      /*create element using utils.createElementFromHTML powyższy kod zamieniamy na elementy DOM */
-      const generatedDOM = utils.createDOMFromHTML(generatedHTML);
-
-      /*find cart container -  dodajemy te elementy do DOM*/
-      const cartContainer = document.querySelector(thisCart.dom.productList);
-      /*add element to menu*/
-      cartContainer.appendChild(menuProduct);
-      console.log('adding product', menuProduct);
-
-      thisCart.product.push(new CartProduct(menuProduct, generatedDOM));
-      console.log('thisCart', thisCart.products);
-    }
-
-
-    update() {
-      const thisCart = this;
-      thisCart.totalNumber = 0;
-      thisCart.subtotalPrice = 0;
-      for (let product of thisCart.products) {
-        thisCart.subtotalPrice += product.price;
-        thisCart.totalNumber += product.amount;
-      }
-      thisCart.totalPrice = thisCart.subtotalPrice + thisCart.deliveryFee;
-
-      console.log(totalNumber);
-      console.log(subtotalPrice);
-      console.log(thisCart.totalPrice);
-
-      for (let key of thisCart.renderTotalsKeys) {
-        for (let elem of thisCart.dom[key]) {
-          elem.innerHTML = thisCart[key];
-        }
-      }
-
-    }
-remove(){
-  const thisCart = this;
-  /* stała index, której wartością jest index cartProduct w tablicy thisCart.products*/
-  const index = thisProduct.prducts.indexOf(cartProduct);
-  /* użyć metody splice ( przymuje ona 2 argumenty:indeks pierwszego usuwanego elementu oraz liczbę elementów,
-   licząc od pierwszego usuwanego elementu. )
-   do usunięcia elementu  o tym indeksie z tablicy thisCart.products ?ale ile elementów usuwamy może 1 bo jest jeden element w tablicy??*/
-  thisCart.products.splice(index, 1 );
-  /* usunąć z DOM element cartProduct.dom.wrapper- wpisać element DOM do usunięcia funkcję remove i pusty nawias*/
-  thisCart.cartProduct.dom.wrapper.remove();
-  thisCart.update();
+initAmountWidget() {
+  const thisProduct = this;
+  thisProduct.amountWidget = new AmountWidget(thisProduct.amountWidgetElem);
+  thisProduct.amountWidgetElem.addEventListener('updated', function () {
+    thisProduct.processOrder();
+  });
 }
 
+addTooCart() {
+  const thisProduct = this;
+  thisProduct.name = thisProduct.data.name;
+  thisProduct.amount = thisProduct.amountWidget.value;
+  app.cart.add(thisProduct);
+
+}
+  }
+
+class AmountWidget {
+  constructor(element) {
+    const thisWidget = this;
+    thisWidget.getElements(element);
+
+    console.log('AmountWidget:', thisWidget);
+    console.log('constructor arguments:', element);
   }
 
 
-  /* gdzie znajdę menuProduct - select.menuProduct w zmiennej globalnej*/
-  class CartProduct {
-    constructor(menuProduct, element) {
-      thisCartProduct = this;
-      thisCartProduct.id = menuProduct.id;
-      thisCartProduct.menu = menuProduct.menu;
-      thisCartProduct.price = menuProduct.price;
-      thisCartProduct.priceSingle = menuProduct.priceSingle;
-      thisCartProduct.amount = menuProduct.amount;
-      thisCartProduct.params = JSON.parse(JSON.stringify(menuProduct.params));
-    }
+  getElements(element) {
+    const thisWidget = this;
 
-    getElements(element) {
+    thisWidget.element = element;
+    thisWidget.input = thisWidget.element.querySelector(select.widgets.amount.input);
+    thisWidget.linkDecrease = thisWidget.element.querySelector(select.widgets.amount.linkDecrease);
+    thisWidget.linkIncrease = thisWidget.element.querySelector(select.widgets.amount.linkIncrease);
+  }
 
-      console.log('thisCartProduct', thisCartProduct);
-      const thisCartProduct = this;
 
-      thisCartProduct.dom = {};
+  setValue(value) {
+    const thisWidget = this;
+    const newValue = parseInt(value);
 
-      thisCartProduct.dom.wrapper = element;
-      /*przypisać znalezione we wrapperze właściwości - można je znaleść w select.cartProduct JS*/
-      thisCartProduct.dom.amountWidget = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.amountWidget);
-      thisCartProduct.dom.price = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.price);
-      thisCartProduct.dom.edit = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.edit);
-      thisCartProduct.dom.remove = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.remove);
-    }
+    /* To do : Add validation*/
+    thisWidget.value = newValue;
+    thisWidget.input.value = thisWidget.value;
+    thisWidget.setValue(thisWidget.input.value);
 
-    initAmountWidget() {
-      const thisCartProduct = this;
+  }
 
-      thisCartProduct.amountWidget = new AmountWidget(thisCartProduct.dom.amountWidgetElem);
-      thisCartProduct.amountWidgetElem.addEventListener('updated', function () {
-        thisCartProduct.amount = thisCartProduct.amountWidget.value;
-        thisCartProduct.price = thisCartProduct.priceSingle * thisCartProduct.amount;
-        thisCartProduct.dom.price.innerHTML = thisCartProduct.price;
-      });
-    }
+  announce() {
+    const thisWidget = this;
 
-    initAmountWidget() {
-      console.log('initAmountWidget', initAmuontWidget);
-    }
+    const event = new CustomEvent('updated', {
+      bubbles: true
+    });
+    thisWidget.dom.wrapper.dispatchEvent(event);
+  }
 
-    remove() {
-      const thisCartProduct = this;
+  initActions() {
+    const thisWidget = this;
+    thisWidget.dom.linkIncrease.addEventListener('click', function (event) {
+      event.preventDefault();
+      thisWidget.setValue(thisWidget.value + 1);
+    });
 
-      const event = new CustomEvent('remove', {
-        bubbles: true,
-        detail: {
-          cartProduct: thisCartProduct,
-        }
-      });
-      thisCartProduct.dom.wrapper.dispatchEvent(event);
-    }
+    thisWidget.dom.linkDecrease.addEventListener('click', function (event) {
+      event.preventDefault();
+      thisWidget.setValue(thisWidget.value - 1);
+    });
 
-    initActions() {
-      const thisCart = this;
-      /*? Dlaczego mi event sam się przekreśla?*/
-      thisCartProduct.dom.edit.addEventListener('click', function () {
-        event.preventDefault();
-      });
-      thisCartProduct.dom.remove.addEventListener('click', function () {
-        event.preventDefault();
-        thisCartProduct.remove();
-      });
+    thisWidget.dom.input.addEventListener('change', function () {
+      thisWidget.value = thisWidget.dom.input.value;
+    });
+  }
+}
+
+class Cart {
+  constructor(element) {
+    const thisCart = this;
+    thisCart.product = [];
+    thisCart.deliveryFee = settings.cart.defaultDeliveryFee;
+    console.log('new Cart', thisCart);
+  }
+  getElements(element) {
+    const thisCart = this;
+    thisCart.dom = {};
+    thisCart.dom.wrapper = element;
+    thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);
+    thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
+
+    thisCart.renderTotalsKeys = ['totalNumber', 'totalPrice', 'subtotalPrice', 'deliveryFee'];
+
+    for (let key of thisCart.renderTotalsKeys) {
+      thisCart.dom[key] = thisCart.dom.wrapper.querySelectorAll(select.cart[key]);
     }
   }
 
 
-  const app = {
 
-    initCart: function () {
-      const thisApp = this;
-      const cartElem = document.querySelector(select.containerOf.cart);
-      thisApp.cart = new Cart(cartElem);
-    },
+  initActions() {
+    const thisCart = this;
+    thisCart.dom.toggleTrigger.addEventListener('click', function (event) {
+      event.preventDefault();
+    });
+    thisCart.dom.toggleTrigger.addEventListener('click', function () {
+      thisCart.dom.wrapper.classList.toggle(classNames.cart.wrapperActive);
+    });
+    thisCart.dom.productList.addEventListener('updated', function () {
+      thisCart.update();
+    });
+  }
 
-    initData: function () {
-      const thisApp = this;
-      thisApp.data = dataSource;
-    },
+  add(menuProduct) {
+    const thisCart = this;
+    /*generate HTML based on temple w scripcie o id="template-cart-product" przekazujemy cały obiekt menuProduct */
+    const generatedHTML = templates.cartProduct(menuProduct);
 
-    initMenu: function () {
-      const thisApp = this;
-      console.log('thisApp.data:', thisApp.data);
+    /*create element using utils.createElementFromHTML powyższy kod zamieniamy na elementy DOM */
+    const generatedDOM = utils.createDOMFromHTML(generatedHTML);
 
-      for (let productData in thisApp.data.products) {
-        new Product(productData, thisApp.data.products[productData]);
+    /*find cart container -  dodajemy te elementy do DOM*/
+    const cartContainer = document.querySelector(thisCart.dom.productList);
+    /*add element to menu*/
+    cartContainer.appendChild(menuProduct);
+    console.log('adding product', menuProduct);
+
+    thisCart.product.push(new CartProduct(menuProduct, generatedDOM));
+    console.log('thisCart', thisCart.products);
+  }
+
+
+  update() {
+    const thisCart = this;
+    thisCart.totalNumber = 0;
+    thisCart.subtotalPrice = 0;
+    for (let product of thisCart.products) {
+      thisCart.subtotalPrice += product.price;
+      thisCart.totalNumber += product.amount;
+    }
+    thisCart.totalPrice = thisCart.subtotalPrice + thisCart.deliveryFee;
+
+    console.log(totalNumber);
+    console.log(subtotalPrice);
+    console.log(thisCart.totalPrice);
+
+    for (let key of thisCart.renderTotalsKeys) {
+      for (let elem of thisCart.dom[key]) {
+        elem.innerHTML = thisCart[key];
       }
-    },
+    }
 
-    init: function () {
-      const thisApp = this;
-      console.log('*** App starting ***');
-      console.log('thisApp:', thisApp);
-      console.log('classNames:', classNames);
-      console.log('settings:', settings);
-      console.log('templates:', templates);
+  }
+  remove() {
+    const thisCart = this;
+    /* stała index, której wartością jest index cartProduct w tablicy thisCart.products*/
+    const index = thisProduct.prducts.indexOf(cartProduct);
+    /* użyć metody splice ( przymuje ona 2 argumenty:indeks pierwszego usuwanego elementu oraz liczbę elementów,
+     licząc od pierwszego usuwanego elementu. )
+     do usunięcia elementu  o tym indeksie z tablicy thisCart.products ?ale ile elementów usuwamy może 1 bo jest jeden element w tablicy??*/
+    thisCart.products.splice(index, 1);
+    /* usunąć z DOM element cartProduct.dom.wrapper- wpisać element DOM do usunięcia funkcję remove i pusty nawias*/
+    thisCart.cartProduct.dom.wrapper.remove();
+    thisCart.update();
+  }
 
-      thisApp.initData();
-      thisApp.initMenu();
-      thisApp.initCart();
+}
 
-    },
-  };
 
-  app.init();
+/* gdzie znajdę menuProduct - select.menuProduct w zmiennej globalnej*/
+class CartProduct {
+  constructor(menuProduct, element) {
+    thisCartProduct = this;
+    thisCartProduct.id = menuProduct.id;
+    thisCartProduct.menu = menuProduct.menu;
+    thisCartProduct.price = menuProduct.price;
+    thisCartProduct.priceSingle = menuProduct.priceSingle;
+    thisCartProduct.amount = menuProduct.amount;
+    thisCartProduct.params = JSON.parse(JSON.stringify(menuProduct.params));
+  }
+
+  getElements(element) {
+
+    console.log('thisCartProduct', thisCartProduct);
+    const thisCartProduct = this;
+
+    thisCartProduct.dom = {};
+
+    thisCartProduct.dom.wrapper = element;
+    /*przypisać znalezione we wrapperze właściwości - można je znaleść w select.cartProduct JS*/
+    thisCartProduct.dom.amountWidget = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.amountWidget);
+    thisCartProduct.dom.price = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.price);
+    thisCartProduct.dom.edit = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.edit);
+    thisCartProduct.dom.remove = thisCartProduct.dom.wrapper.querySelector(select.cartProduct.remove);
+  }
+
+  initAmountWidget() {
+    const thisCartProduct = this;
+
+    thisCartProduct.amountWidget = new AmountWidget(thisCartProduct.dom.amountWidgetElem);
+    thisCartProduct.amountWidgetElem.addEventListener('updated', function () {
+      thisCartProduct.amount = thisCartProduct.amountWidget.value;
+      thisCartProduct.price = thisCartProduct.priceSingle * thisCartProduct.amount;
+      thisCartProduct.dom.price.innerHTML = thisCartProduct.price;
+    });
+  }
+
+  initAmountWidget() {
+    console.log('initAmountWidget', initAmuontWidget);
+  }
+
+  remove() {
+    const thisCartProduct = this;
+
+    const event = new CustomEvent('remove', {
+      bubbles: true,
+      detail: {
+        cartProduct: thisCartProduct,
+      }
+    });
+    thisCartProduct.dom.wrapper.dispatchEvent(event);
+  }
+
+  initActions() {
+    const thisCart = this;
+    /*? Dlaczego mi event sam się przekreśla?*/
+    thisCartProduct.dom.edit.addEventListener('click', function () {
+      event.preventDefault();
+    });
+    thisCartProduct.dom.remove.addEventListener('click', function () {
+      event.preventDefault();
+      thisCartProduct.remove();
+    });
+  }
+}
+
+
+const app = {
+
+  initCart: function () {
+    const thisApp = this;
+    const cartElem = document.querySelector(select.containerOf.cart);
+    thisApp.cart = new Cart(cartElem);
+  },
+
+  initData: function () {
+    const thisApp = this;
+    thisApp.data = {};
+    /*zapisujemy w stałej url adres endpointuz ktorego maja zostać pobrane dane */
+    const url = settings.db.url + '/' + settings.db.product;
+    /* wywołanie zapytania AJAX za pomocą funkcji fetch z zastosowaniem metody .then*/
+    fetch(url)
+      /* chainnig czyli łączenie kilku metod ze sobą za pomocą kropki*/
+      .then(function (rawResponse) {
+        /* otrzymaną odpowiedź konwertujemy z JSONa na tablicę*/
+        return rawResponse.json();
+      })
+      .then(function (parsedResponse) {
+        /* po otrzymaniu skorwentowanej odpowiedzi parsedResponse wyswietlamy w konsoli*/
+        console.log('parsedResponse', parsedResponse);
+        /* save parsedResponse as thisApp.data.products*/
+        thisApp.data.products = parsedResponse;
+        /* execute initMenu method*/
+        thisApp.initMenu();
+      });
+    console.log('thisApp.data', JSON.stringify(thisApp.data));
+  },
+
+  initMenu: function () {
+    const thisApp = this;
+    console.log('thisApp.data:', thisApp.data);
+
+    for (let productData in thisApp.data.products) {
+      new Product(thisApp.data.products[productData].id, thisApp.dataaproducts[productData]);
+    }
+  },
+
+  init: function () {
+    const thisApp = this;
+    console.log('*** App starting ***');
+    console.log('thisApp:', thisApp);
+    console.log('classNames:', classNames);
+    console.log('settings:', settings);
+    console.log('templates:', templates);
+
+    thisApp.initData();
+
+    thisApp.initCart();
+
+  },
+};
+
+app.init();
 };
