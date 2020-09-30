@@ -16,7 +16,6 @@
       @include accordion-open();
       padding: ($base-size * 1.5) 0 0 0;
     }
-
   }
 
   &__summary {
@@ -68,9 +67,7 @@
       &:hover .btn-quantity--lt {
         opacity: 1;
       }
-
     }
-
   }
 
   &__product-name {
@@ -95,9 +92,7 @@
       &:hover {
         color: lighten($color-main, 3%);
       }
-
     }
-
   }
 
   &__order-price {
@@ -109,18 +104,16 @@
     li {
       @include flex(row, center, space-between);
     }
-
   }
 
   &__order-confirmation {
     border-top: 1px solid lighten($color-dark, 70%);
     padding: $base-size 0 0 0;
 
-    input, button {
+    input,
+    button {
       width: 100%;
       margin-bottom: ($base-size / 2);
     }
-
   }
-
 }
