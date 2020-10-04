@@ -25,6 +25,7 @@ export default class Booking {
         /*analogicznie do peopleAmount znaleźć i zapisać element dla hoursAmount */
         thisBooking.dom.hoursAmount = thisBooking.dom.wrapper.querySelector(select.booking.hoursAmount);
         thisBooking.dom.datePicker = thisBooking.dom.wrapper.querySelector(select.widgets.datePicker.wrapper);
+
     }
 
     initWidgets() {
@@ -37,7 +38,7 @@ export default class Booking {
         /*Następnie w metodzie initWidgets stwórz nową instancję klasy DatePicker
          zapisując ją do właściwości thisBooking.datePicker, analogicznie jak zrobiliśmy
          to dla obu instancji AmountWidget.*/
-         thisBooking.datePicker = new AmountWidget(thisBooking.dom.datePicker);
+        thisBooking.datePicker = new AmountWidget(thisBooking.dom.datePicker);
     }
 
 }

@@ -1,3 +1,9 @@
+import {select, settings} from '../settings.js';
+import BaseWidget from './BaseWidget.js';
+import utils from '../utils.js';
+
+
+
 class DataPicker extends BaseWidget {
     constructor(wrapper) {
         super(wrapper, utils.dateToStr(new Date()))
@@ -43,7 +49,7 @@ class DataPicker extends BaseWidget {
         return parseInt(value);
     }
 
-    isValid(value) {
+    isValid() {
         return (true)
     }
 
@@ -51,3 +57,4 @@ class DataPicker extends BaseWidget {
     }
 
 }
+export default DatePicker;
