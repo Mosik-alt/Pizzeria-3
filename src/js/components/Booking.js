@@ -43,9 +43,9 @@ export default class Booking {
             booking: settings.db.url + '/' + settings.db.booking
                 + '?' + params.booking.join('&'),
             eventsCurrent: settings.db.url + '/' + settings.db.event
-                + '?' + params.eventsCurrent.join('&'), ,
+                + '?' + params.eventsCurrent.join('&'),
             eventsRepeat: settings.db.url + '/' + settings.db.event
-                + '?' + params.eventsRepeat.join('&'), ,
+                + '?' + params.eventsRepeat.join('&'),
         };
         Promise.all([
             fetch(urls.booking),
