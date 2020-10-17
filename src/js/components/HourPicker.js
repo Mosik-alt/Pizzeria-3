@@ -5,7 +5,7 @@ import utils from '../utils.js';
 
 class HourPicker extends BaseWidget {
   constructor(wrapper) {
-    super(wrapper, settings.hours.open(new Date()));
+    super(wrapper, settings.hours.open);
     const thisWidget = this;
 
     thisWidget.dom.input = thisWidget.dom.wrapper.querySelector(select.widgets.hourPicker.input);

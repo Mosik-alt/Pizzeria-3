@@ -66,6 +66,7 @@ export default class Booking {
         console.log(bookings);
         console.log(eventsCurrent);
         console.log(eventsRepeat);
+        thisBooking.parseData(bookings, eventsCurrent, eventsRepeat);
       });
   }
   parseData(bookings, eventsCurrent, eventsRepeat) {
@@ -100,28 +101,24 @@ export default class Booking {
   makeBooked(date, hour, duration, table) {
     const thisBooking = this;
 
+    if (typeof thisBooking.booked[date] == 'undefined') {
+      thisBooking.booked[date] = {};
+    }
+
     const startHour = utils.hourToNumber(hour);
 
     for (let hourBlock = startHour; hourBlock < startHour + duration; hourBlock += 0.5) {
-
-      if (typeof thisBooking.booked[date] == 'undefined') {
-        thisBooking.booked[date] = {};
-      }
+      // console.log('loop', hourBlock);
 
       if (typeof thisBooking.booked[date][hourBlock] == 'undefined') {
         thisBooking.booked[date][hourBlock] = [];
       }
 
       thisBooking.booked[date][hourBlock].push(table);
-
-      for (let hourBlock = startHour; hourBlock < startHour + duration; hourBlock += 0.5) {
-        // console.log('loop', hourBlock);
-      }
-
     }
   }
 
-  updateDom() {
+  updateDOM() {
     const thisBooking = this;
 
     thisBooking.date = thisBooking.datePicker.value;
@@ -157,7 +154,7 @@ export default class Booking {
   render(element) {
     const thisBooking = this;
     /* jak w menuProdukt*/
-    const generatedHTML = templates.bookingWidget;
+    const generatedHTML = templates.bookingWidget();
     /*stworzyć pusty obiekt thisBooking.dom*/
     thisBooking.dom = {};
     /*zapisywać do tego obiektu właściwość wrapper równą otrzymanemu argumentowi */
@@ -168,22 +165,22 @@ export default class Booking {
     thisBooking.dom.peopleAmount = thisBooking.dom.wrapper.querySelector(select.booking.peopleAmount);
     /*analogicznie do peopleAmount znaleźć i zapisać element dla hoursAmount */
     thisBooking.dom.hoursAmount = thisBooking.dom.wrapper.querySelector(select.booking.hoursAmount);
+    thisBooking.dom.hourPicker = thisBooking.dom.wrapper.querySelector(select.widgets.hourPicker.wrapper);
     thisBooking.dom.datePicker = thisBooking.dom.wrapper.querySelector(select.widgets.datePicker.wrapper);
-    thisBooking.dom.tables = thisBooking.dom.wrapper.querySelector(select.booking.tables);
+    thisBooking.dom.tables = thisBooking.dom.wrapper.querySelectorAll(select.booking.tables);
   }
 
   initWidgets() {
     const thisBooking = this;
-
+    console.log(thisBooking.dom);
     thisBooking.peopleAmount = new AmountWidget(thisBooking.dom.peopleAmount);
     thisBooking.hoursAmount = new AmountWidget(thisBooking.dom.hoursAmount);
     thisBooking.datePicker = new DatePicker(thisBooking.dom.datePicker);
+
     thisBooking.hourPicker = new HourPicker(thisBooking.dom.hourPicker);
 
     thisBooking.dom.wrapper.addEventListener('updated', function () {
       thisBooking.updateDOM();
     });
   }
-
 }
-
