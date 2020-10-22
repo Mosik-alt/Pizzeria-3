@@ -1,1 +1,2 @@
 [1015/190714.159:ERROR:directory_reader_win.cc(43)] FindFirstFile: System nie mo¿e odnaleŸæ okreœlonej œcie¿ki. (0x3)
+[1018/115912.183:ERROR:filesystem_win.cc(129)] GetFileAttributes C:\Users\user\AppData\Local\Microsoft\Edge\User Data\Crashpad\attachments\95d7b2a6-c495-47bd-943b-07325dd8ab01: System nie mo¿e odnaleŸæ okreœlonej œcie¿ki. (0x3)
