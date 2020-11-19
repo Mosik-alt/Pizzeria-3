@@ -931,7 +931,7 @@ select {
 .main-carousel .opinion-wrapper {
   display: -ms-flexbox;
   display: flex;
-  width: 50_%;
+  width: 100%;
 }
 
 .main-carousel .flickity-prev-next-button {
